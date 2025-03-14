@@ -3,13 +3,13 @@ import subprocess
 import time
 from argparse import ArgumentParser
 from pathlib import Path
+from statistics import mean
 
 from agents.automators import NetunoAutomator
 from agents.exporter import Exporter
 from agents.parsers import FileNameParser, ResultParser
 from agents.validators import CommandLineArgsValidator
-from globals.constants import (
-    INITIAL_DATES, NETUNO_STARTUP_WAIT_TIME, PATH_TO_NETUNO_EXE, PATH_TO_PRECIPITATION_FILE)
+from globals.constants import INITIAL_DATES, NETUNO_STARTUP_WAIT_TIME, SIMULATION_PARAMETERS
 from globals.errors import (
     InvalidNetunoExecutableError, InvalidSourceDirectoryError, MissingInputDataError)
 
@@ -70,8 +70,42 @@ def setup_logger(
 
 
 def main(args: CommandLineArgsValidator):
-    # TODO: implement actual workflow
-    pass
+    global_start_time = time.perf_counter()
+
+    netuno_process = run_netuno(args.netuno_exe_path)
+    automator = NetunoAutomator()
+    durations = []
+
+    exporter = Exporter(args.precipitation_dir_path.parent.parent)
+    path_iterator = args.precipitation_dir_path.iterdir()
+    iteration_start_time = time.perf_counter()
+    first_file = next(path_iterator)
+    city, model, scenario = FileNameParser.get_metadata(first_file)
+    output_path = automator.run_first_simulation(
+        first_file, INITIAL_DATES[scenario], **SIMULATION_PARAMETERS)
+    parser = ResultParser(output_path)
+    exporter.save_results(city, model, scenario, parser.parse_results())
+    logger.info(
+        f"Finished configuration and first simulation ({city}, {model}, {scenario}) in "
+        f"{time.perf_counter() - iteration_start_time:.2f}s")
+    for file in path_iterator:
+        iteration_start_time = time.perf_counter()
+        city, model, scenario = FileNameParser.get_metadata(file)
+        output_path = automator.run_simulation(file, INITIAL_DATES[scenario])
+        parser = ResultParser(output_path)
+        exporter.save_results(city, model, scenario, parser.parse_results())
+
+        duration = time.perf_counter() - iteration_start_time
+        durations.append(duration)
+        logger.info(
+            f"Finished simulation for ({city}, {model}, {scenario}) in {duration:.2f}s")
+
+    logger.info(
+        f"Completed all operations in {time.perf_counter() - global_start_time:.2f}. "
+        f"Average time per iteration: {mean(durations)}s")
+
+    netuno_process.terminate()
+    logger.info("Successfully terminated Netuno process")
 
 
 if __name__ == "__main__":
