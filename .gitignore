@@ -7,10 +7,10 @@ __pycache__/
 .Python
 .venv
 .vscode/
-*.csv
+# *.csv
 *.egg
 *.egg-info/
-*.json
+# *.json
 *.log
 *.nc
 *.parquet
