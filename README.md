@@ -1,3 +1,10 @@
+# ARCHIVED
+
+This repository has been archived. Another repository now contains most of the content and functionality that was once here. The new repository will receive any updates and fixes, while this one will not.
+
+Link to NEW REPOSITORY: https://github.com/igorcmvaz/netuno-automator
+
+## Old README
 # Triton
 
 Repository for automating the operation of parts of the software "Netuno", which aims at estimating the potential savings in drinking water through the use of rainwater where drinking water is not required. More information, download links and manuals for Netuno can be in [their project page](https://labeee.ufsc.br/downloads/softwares/netuno).
